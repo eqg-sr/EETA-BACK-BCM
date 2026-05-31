@@ -1,0 +1,305 @@
+{
+  "info": {
+    "_postman_id": "ec4dc38a-cc93-41ab-a96a-d02e6fc72fa5",
+    "name": "EETA",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "47891208"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"name\": \"John Doe\",\n    \"password\": \"securePassword123\",\n    \"role\": \"arbitro\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/options/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "options",
+                "roles"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"securePassword123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Self",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Causas",
+      "item": [
+        {
+          "name": "List Causas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/causas?search=caratula&tribunal=Comercial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "causas"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "caratula"
+                },
+                {
+                  "key": "tribunal",
+                  "value": "Comercial"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Causa by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/causas/CAU-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "causas",
+                "CAU-001"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Causa",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"CAU-001\",\n    \"identificador\": \"EXP-2024-X\",\n    \"numeroInterno\": \"100/24\",\n    \"caratula\": \"Doe vs Smith\",\n    \"tribunal\": \"Tribunal de Arbitraje\",\n    \"arbitro\": \"Dr. Juan Pérez\",\n    \"fechaPresentacion\": \"01/01/2024 10:00\",\n    \"fechaInicio\": \"05/01/2024 09:00\",\n    \"ultimoMovimiento\": \"05/01/2024 09:00\",\n    \"objetoJuicio\": \"Incumplimiento de Contrato\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/causas",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "causas"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Expedientes",
+      "item": [
+        {
+          "name": "Add Expediente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"nroExpediente\": \"EXP-789\",\n    \"caratula\": \"Incidente de Prueba\",\n    \"fechaPresentacion\": \"10/02/2024\",\n    \"fechaInicio\": \"11/02/2024\",\n    \"ultimoMovimiento\": \"11/02/2024\",\n    \"objetoJuicio\": \"Pruebas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/causas/CAU-001/expedientes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "causas",
+                "CAU-001",
+                "expedientes"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Movimiento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"MOV-1\",\n    \"fecha\": \"12/02/2024 15:30\",\n    \"tipo\": \"ACT\",\n    \"titulo\": \"Acta de Audiencia\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/causas/CAU-001/expedientes/EXP-789/movimientos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "causas",
+                "CAU-001",
+                "expedientes",
+                "EXP-789",
+                "movimientos"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Comentario",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"id\": \"COM-1\",\n    \"autor\": \"John Doe\",\n    \"rol\": \"arbitro\",\n    \"fecha\": \"12/02/2024\",\n    \"texto\": \"Revisar adjuntos de la audiencia.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/causas/CAU-001/expedientes/EXP-789/comentarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "causas",
+                "CAU-001",
+                "expedientes",
+                "EXP-789",
+                "comentarios"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Opciones",
+      "item": [
+        {
+          "name": "Roles",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "Sujetos",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        },
+        {
+          "name": "Movimientos",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwtToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api"
+    },
+    {
+      "key": "jwtToken",
+      "value": "your_token_here"
+    }
+  ]
+}
