@@ -24,8 +24,8 @@ router.put ('/:id/status', authorize('secretario'),          updateStatus);
 router.delete('/:id',      authorize('secretario'),          deleteCausa);
 
 // Expedientes
-router.post  ('/:id/expedientes',                         authorize('actor'), addExpediente);
-router.put   ('/:id/expedientes/:nroExpediente',          authorize('actor'), updateExpediente);
+router.post  ('/:id/expedientes',                         authorize('actor', 'secretario'), addExpediente);
+router.put   ('/:id/expedientes/:nroExpediente',          authorize('actor', 'secretario'), updateExpediente);
 router.delete('/:id/expedientes/:nroExpediente',          authorize('secretario'),deleteExpediente);
 
 // Movimientos
