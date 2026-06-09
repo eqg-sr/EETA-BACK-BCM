@@ -7,7 +7,7 @@ const registerSchema = z.object({
   email:    z.string().email(),
   name:     z.string().min(2),
   password: z.string().min(8),
-  role:     z.enum(['arbitro', 'demandado', 'actor', 'secretario']),
+  role:     z.enum(['arbitro', 'demandado', 'actor', 'secretario', 'perito']),
 });
 
 const loginSchema = z.object({
@@ -35,7 +35,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const user = await User.create({ email, name, password, role });
+  const user = await User.create({ email, name, password, role, activo: true, aprobado: false });
   const token = signToken(user._id.toString(), user.email, user.role);
 
   res.status(201).json({ token, user });

@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
+import mongoose from 'mongoose';
+import path from 'path';
 import { Causa } from '../models/Causa';
+import { User } from '../models/User';
+import { AuthRequest } from '../middleware/auth';
+import { CAUSA_STATUSES } from '../types';
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 
@@ -14,9 +19,10 @@ const sujetoSchema = z.object({
 
 const movimientoSchema = z.object({
   id:          z.string().min(1),
-  fecha:       z.string().min(1),
+  fecha:       z.coerce.date(),
   tipo:        z.enum(['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER']),
   titulo:      z.string().min(1),
+  descripcion: z.string().min(1).max(2000),
   numero:      z.string().optional(),
   tribunal:    z.string().optional(),
   presentante: z.string().optional(),
@@ -29,19 +35,20 @@ const comentarioSchema = z.object({
   id:    z.string().min(1),
   autor: z.string().min(1),
   rol:   z.string().min(1),
-  fecha: z.string().min(1),
+  fecha: z.coerce.date(),
   texto: z.string().min(1),
 });
 
 const expedienteSchema = z.object({
   nroExpediente:     z.string().min(1),
   caratula:          z.string().min(1),
-  fechaPresentacion: z.string().min(1),
-  fechaInicio:       z.string().min(1),
-  ultimoMovimiento:  z.string().min(1),
+  fechaPresentacion: z.coerce.date(),
+  fechaInicio:       z.coerce.date(),
+  ultimoMovimiento:  z.coerce.date(),
   objetoJuicio:      z.string().min(1),
   montoDisputa:      z.string().optional(),
   adjuntoNombre:     z.string().optional(),
+  asignados:         z.array(z.string()).optional(),
   sujetos:           z.array(sujetoSchema).default([]),
   movimientos:       z.array(movimientoSchema).default([]),
   comentarios:       z.array(comentarioSchema).default([]),
@@ -49,8 +56,9 @@ const expedienteSchema = z.object({
 
 const causaRelacionadaSchema = z.object({
   identificador: z.string().min(1),
-  caratula:      z.string().min(1),
-  tribunal:      z.string().min(1),
+  descripcion:   z.string().min(1).max(500),
+  caratula:      z.string().optional(),
+  tribunal:      z.string().optional(),
 });
 
 const causaSchema = z.object({
@@ -60,13 +68,17 @@ const causaSchema = z.object({
   caratula:          z.string().min(1),
   tribunal:          z.string().min(1),
   arbitro:           z.string().min(1),
-  fechaPresentacion: z.string().min(1),
-  fechaInicio:       z.string().min(1),
-  ultimoMovimiento:  z.string().min(1),
+  fechaPresentacion: z.coerce.date(),
+  fechaInicio:       z.coerce.date(),
+  ultimoMovimiento:  z.coerce.date(),
   objetoJuicio:      z.string().min(1),
   sujetos:           z.array(sujetoSchema).default([]),
   expedientes:       z.array(expedienteSchema).default([]),
   causasRelacionadas:z.array(causaRelacionadaSchema).default([]),
+});
+
+const statusSchema = z.object({
+  status: z.enum(CAUSA_STATUSES),
 });
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -77,31 +89,39 @@ function getLatestMovimiento(causa: any) {
     for (const mov of exp.movimientos ?? []) all.push(mov);
   }
   if (!all.length) return null;
-  return all.sort((a, b) => {
-    const parse = (f: string) => {
-      const [d, t] = f.split(' ');
-      const [day, mon, year] = d.split('/');
-      return new Date(`${year}-${mon}-${day}T${t ?? '00:00:00'}`).getTime();
-    };
-    return parse(b.fecha) - parse(a.fecha);
-  })[0];
+  return all.sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0];
 }
 
 // ── Controllers ───────────────────────────────────────────────────────────────
 
 /** GET /causas */
-export async function listCausas(req: Request, res: Response): Promise<void> {
-  const { search, tribunal, arbitro } = req.query;
+export async function listCausas(req: AuthRequest, res: Response): Promise<void> {
+  const { search, tribunal, arbitro, status } = req.query;
+
+  const page  = Math.max(1, parseInt(String(req.query.page  ?? '1'),  10));
+  const limit = Math.max(1, parseInt(String(req.query.limit ?? '20'), 10));
+  const skip  = (page - 1) * limit;
 
   const filter: Record<string, any> = {};
   if (search)   filter.$text = { $search: String(search) };
   if (tribunal) filter.tribunal = new RegExp(String(tribunal), 'i');
   if (arbitro)  filter.arbitro  = new RegExp(String(arbitro), 'i');
+  if (status && CAUSA_STATUSES.includes(status as any)) filter.status = status;
 
-  const causas = await Causa.find(filter)
-    .select('id identificador numeroInterno caratula tribunal arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio')
-    .sort({ createdAt: -1 });
-  res.json(causas);
+  // Restrict non-staff roles to causas where they are explicitly assigned
+  const role = req.user!.role;
+  if (['actor', 'demandado', 'perito'].includes(role)) {
+    filter['expedientes.asignados'] = new mongoose.Types.ObjectId(req.user!.userId);
+  }
+
+  const projection = 'id identificador numeroInterno caratula tribunal arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status';
+
+  const [data, total] = await Promise.all([
+    Causa.find(filter).select(projection).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Causa.countDocuments(filter),
+  ]);
+
+  res.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
 }
 
 /** GET /causas/:id */
@@ -140,6 +160,33 @@ export async function deleteCausa(req: Request, res: Response): Promise<void> {
   res.status(204).send();
 }
 
+/** PUT /causas/:id/status */
+export async function updateStatus(req: AuthRequest, res: Response): Promise<void> {
+  const parsed = statusSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+
+  const { status } = parsed.data;
+
+  const causa = await Causa.findOne({ id: req.params.id });
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+
+  if (status === 'iniciado') {
+    const hasValidExpediente = causa.expedientes.some(
+      (exp: any) => exp.sujetos?.length > 0
+    );
+    if (!hasValidExpediente) {
+      res.status(400).json({
+        message: 'Para iniciar la causa debe existir al menos un expediente con al menos un sujeto asignado',
+      });
+      return;
+    }
+  }
+
+  causa.status = status;
+  await causa.save();
+  res.json(causa);
+}
+
 // ── Expedientes ───────────────────────────────────────────────────────────────
 
 /** POST /causas/:id/expedientes */
@@ -147,9 +194,27 @@ export async function addExpediente(req: Request, res: Response): Promise<void> 
   const parsed = expedienteSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
 
+  const { asignados: asignadosRaw, ...expedienteData } = parsed.data;
+
+  let asignadosIds: mongoose.Types.ObjectId[] = [];
+  if (asignadosRaw && asignadosRaw.length > 0) {
+    const validIds = asignadosRaw.filter(id => mongoose.Types.ObjectId.isValid(id));
+    if (validIds.length !== asignadosRaw.length) {
+      res.status(400).json({ message: 'Uno o más asignados tienen un ID inválido' });
+      return;
+    }
+    const objectIds = validIds.map(id => new mongoose.Types.ObjectId(id));
+    const count = await User.countDocuments({ _id: { $in: objectIds } });
+    if (count !== objectIds.length) {
+      res.status(400).json({ message: 'Uno o más asignados no existen' });
+      return;
+    }
+    asignadosIds = objectIds;
+  }
+
   const causa = await Causa.findOneAndUpdate(
     { id: req.params.id },
-    { $push: { expedientes: parsed.data } },
+    { $push: { expedientes: { ...expedienteData, asignados: asignadosIds } } },
     { new: true, runValidators: true }
   );
   if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
@@ -190,7 +255,28 @@ export async function deleteExpediente(req: Request, res: Response): Promise<voi
 // ── Movimientos ───────────────────────────────────────────────────────────────
 
 /** POST /causas/:id/expedientes/:nroExpediente/movimientos */
-export async function addMovimiento(req: Request, res: Response): Promise<void> {
+export async function addMovimiento(req: AuthRequest, res: Response): Promise<void> {
+  const { role, userId } = req.user!;
+
+  // Perito can never write
+  if (role === 'perito') {
+    res.status(403).json({ message: 'Forbidden: peritos cannot add movements' });
+    return;
+  }
+
+  // actor and demandado require explicit assignment to the expediente
+  if (!['secretario', 'arbitro'].includes(role)) {
+    const causa = await Causa.findOne({ id: req.params.id });
+    if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+    const exp = causa.expedientes.find((e: any) => e.nroExpediente === req.params.nroExpediente);
+    if (!exp) { res.status(404).json({ message: 'Expediente not found' }); return; }
+    const isAssigned = (exp as any).asignados?.some((id: any) => id.toString() === userId);
+    if (!isAssigned) {
+      res.status(403).json({ message: 'Forbidden: not assigned to this expediente' });
+      return;
+    }
+  }
+
   const parsed = movimientoSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
 
@@ -292,18 +378,39 @@ export async function deleteSujeto(req: Request, res: Response): Promise<void> {
 
 // ── Causas Relacionadas ───────────────────────────────────────────────────────
 
-/** POST /causas/:id/relacionadas */
+/** POST /causas/:id/relacionadas  (multipart/form-data) */
 export async function addCausaRelacionada(req: Request, res: Response): Promise<void> {
   const parsed = causaRelacionadaSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
 
+  const file = (req as any).file as Express.Multer.File | undefined;
+  const entrada: Record<string, any> = { ...parsed.data };
+  if (file) {
+    entrada.archivo      = file.path.replace(/\\/g, '/');
+    entrada.nombreArchivo = file.originalname;
+  }
+
   const causa = await Causa.findOneAndUpdate(
     { id: req.params.id },
-    { $addToSet: { causasRelacionadas: parsed.data } },
+    { $push: { causasRelacionadas: entrada } },
     { new: true }
   );
   if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
   res.status(201).json(causa);
+}
+
+/** GET /causas/:id/relacionadas/:relacionadaId/archivo */
+export async function getArchivoRelacionada(req: Request, res: Response): Promise<void> {
+  const causa = await Causa.findOne({ id: req.params.id });
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+
+  const rel = (causa.causasRelacionadas as any[]).find(
+    (r: any) => r._id?.toString() === req.params.relacionadaId
+  );
+  if (!rel?.archivo) { res.status(404).json({ message: 'Archivo no encontrado' }); return; }
+
+  const absPath = path.resolve(rel.archivo);
+  res.sendFile(absPath);
 }
 
 /** DELETE /causas/:id/relacionadas/:identificador */

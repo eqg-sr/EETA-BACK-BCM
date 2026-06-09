@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { SujetoVinculo, MovimientoTipo } from '../types';
+import { SujetoVinculo, MovimientoTipo, CausaStatus } from '../types';
 
 // ── Sub-schemas ──────────────────────────────────────────────────────────────
 
@@ -17,9 +17,10 @@ const SujetoSchema = new Schema(
 const MovimientoSchema = new Schema(
   {
     id:          { type: String, required: true },
-    fecha:       { type: String, required: true },
+    fecha:       { type: Date, required: true },
     tipo:        { type: String, enum: ['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER'] as MovimientoTipo[], required: true },
     titulo:      { type: String, required: true },
+    descripcion: { type: String, required: true, maxlength: 2000 },
     numero:      { type: String },
     tribunal:    { type: String },
     presentante: { type: String },
@@ -35,7 +36,7 @@ const ComentarioSchema = new Schema(
     id:     { type: String, required: true },
     autor:  { type: String, required: true },
     rol:    { type: String, required: true },
-    fecha:  { type: String, required: true },
+    fecha:  { type: Date, required: true },
     texto:  { type: String, required: true },
   },
   { _id: false }
@@ -45,15 +46,16 @@ const ExpedienteSchema = new Schema(
   {
     nroExpediente:    { type: String, required: true },
     caratula:         { type: String, required: true },
-    fechaPresentacion:{ type: String, required: true },
-    fechaInicio:      { type: String, required: true },
-    ultimoMovimiento: { type: String, required: true },
+    fechaPresentacion:{ type: Date, required: true },
+    fechaInicio:      { type: Date, required: true },
+    ultimoMovimiento: { type: Date, required: true },
     objetoJuicio:     { type: String, required: true },
     montoDisputa:     { type: String },
     adjuntoNombre:    { type: String },
-    sujetos:          { type: [SujetoSchema], default: [] },
-    movimientos:      { type: [MovimientoSchema], default: [] },
-    comentarios:      { type: [ComentarioSchema], default: [] },
+    asignados:    { type: [{ type: Schema.Types.ObjectId, ref: 'User' }], default: [] },
+    sujetos:      { type: [SujetoSchema], default: [] },
+    movimientos:  { type: [MovimientoSchema], default: [] },
+    comentarios:  { type: [ComentarioSchema], default: [] },
   },
   { _id: false }
 );
@@ -61,10 +63,13 @@ const ExpedienteSchema = new Schema(
 const CausaRelacionadaSchema = new Schema(
   {
     identificador: { type: String, required: true },
-    caratula:      { type: String, required: true },
-    tribunal:      { type: String, required: true },
+    caratula:      { type: String },
+    tribunal:      { type: String },
+    descripcion:   { type: String, required: true, maxlength: 500 },
+    archivo:       { type: String },
+    nombreArchivo: { type: String },
+    creadoEn:      { type: Date, default: Date.now },
   },
-  { _id: false }
 );
 
 // ── Main Causa document ───────────────────────────────────────────────────────
@@ -76,10 +81,11 @@ export interface ICausa extends Document {
   caratula: string;
   tribunal: string;
   arbitro: string;
-  fechaPresentacion: string;
-  fechaInicio: string;
-  ultimoMovimiento: string;
+  fechaPresentacion: Date;
+  fechaInicio: Date;
+  ultimoMovimiento: Date;
   objetoJuicio: string;
+  status: CausaStatus;
   sujetos: typeof SujetoSchema[];
   expedientes: typeof ExpedienteSchema[];
   causasRelacionadas: typeof CausaRelacionadaSchema[];
@@ -93,16 +99,16 @@ const CausaSchema = new Schema<ICausa>(
     caratula:         { type: String, required: true },
     tribunal:         { type: String, required: true },
     arbitro:          { type: String, required: true },
-    fechaPresentacion:{ type: String, required: true },
-    fechaInicio:      { type: String, required: true },
-    ultimoMovimiento: { type: String, required: true },
+    fechaPresentacion:{ type: Date, required: true },
+    fechaInicio:      { type: Date, required: true },
+    ultimoMovimiento: { type: Date, required: true },
     objetoJuicio:     { type: String, required: true },
+    status:           { type: String, enum: ['pendiente', 'iniciado', 'en_proceso', 'cerrado'] as CausaStatus[], default: 'pendiente' },
     sujetos:          { type: [SujetoSchema], default: [] },
     expedientes:      { type: [ExpedienteSchema], default: [] },
     causasRelacionadas:{ type: [CausaRelacionadaSchema], default: [] },
   },
   { timestamps: true }
-  
 );
 
 // Text index for caratula search
