@@ -235,6 +235,32 @@ export async function updateStatus(req: AuthRequest, res: Response): Promise<voi
   res.json(causa);
 }
 
+// ── Carátula ──────────────────────────────────────────────────────────────────
+
+/** POST /causas/:id/caratula  (multipart/form-data, field "archivo") */
+export async function addCaratulaArchivo(req: Request, res: Response): Promise<void> {
+  const file = (req as any).file as Express.Multer.File | undefined;
+  if (!file) { res.status(400).json({ message: 'Archivo requerido' }); return; }
+
+  const causa = await Causa.findOneAndUpdate(
+    { id: req.params.id },
+    { archivo: file.path.replace(/\\/g, '/'), nombreArchivo: file.originalname },
+    { new: true }
+  );
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+  res.status(201).json(causa);
+}
+
+/** GET /causas/:id/caratula/archivo */
+export async function getArchivoCaratula(req: Request, res: Response): Promise<void> {
+  const causa = await Causa.findOne({ id: req.params.id });
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+  if (!causa.archivo) { res.status(404).json({ message: 'Archivo no encontrado' }); return; }
+
+  const absPath = path.resolve(causa.archivo);
+  res.sendFile(absPath);
+}
+
 // ── Expedientes ───────────────────────────────────────────────────────────────
 
 /** POST /causas/:id/expedientes */

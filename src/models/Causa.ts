@@ -116,6 +116,8 @@ export interface ICausa extends Document {
   ultimoMovimiento: Date;
   objetoJuicio: string;
   status: CausaStatus;
+  archivo?: string;
+  nombreArchivo?: string;
   sujetos: typeof SujetoSchema[];
   expedientes: typeof ExpedienteSchema[];
   causasRelacionadas: typeof CausaRelacionadaSchema[];
@@ -134,6 +136,8 @@ const CausaSchema = new Schema<ICausa>(
     ultimoMovimiento: { type: Date, required: true },
     objetoJuicio:     { type: String, required: true },
     status:           { type: String, enum: ['pendiente', 'iniciado', 'en_proceso', 'cerrado'] as CausaStatus[], default: 'pendiente' },
+    archivo:          { type: String },
+    nombreArchivo:    { type: String },
     sujetos:          { type: [SujetoSchema], default: [] },
     expedientes:      { type: [ExpedienteSchema], default: [] },
     causasRelacionadas:{ type: [CausaRelacionadaSchema], default: [] },

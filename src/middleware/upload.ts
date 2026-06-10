@@ -69,3 +69,29 @@ export const uploadMovimiento = multer({
     }
   },
 }).single('archivo');
+
+const UPLOAD_DIR_CARATULAS = path.join(__dirname, '../../uploads/caratulas');
+
+if (!fs.existsSync(UPLOAD_DIR_CARATULAS)) {
+  fs.mkdirSync(UPLOAD_DIR_CARATULAS, { recursive: true });
+}
+
+const storageCaratulas = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR_CARATULAS),
+  filename: (_req, file, cb) => {
+    const safe = file.originalname.replace(/\s+/g, '_');
+    cb(null, `${Date.now()}-${safe}`);
+  },
+});
+
+export const uploadCaratula = multer({
+  storage: storageCaratulas,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no permitido'));
+    }
+  },
+}).single('archivo');

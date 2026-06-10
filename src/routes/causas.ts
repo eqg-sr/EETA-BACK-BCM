@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
-import { uploadRelacionada, uploadMovimiento } from '../middleware/upload';
+import { uploadRelacionada, uploadMovimiento, uploadCaratula } from '../middleware/upload';
 import {
   listCausas, getCausa, createCausa, updateCausa, updateStatus, deleteCausa,
   addExpediente, updateExpediente, deleteExpediente,
@@ -8,6 +8,7 @@ import {
   addComentario, deleteComentario,
   addCausaRelacionada, removeCausaRelacionada, getArchivoRelacionada,
   addSujeto, deleteSujeto, addSujetoCausa,
+  addCaratulaArchivo, getArchivoCaratula,
 } from '../controllers/causaController';
 
 const router = Router();
@@ -22,6 +23,10 @@ router.post('/',           authorize('actor', 'secretario'), createCausa);
 router.put ('/:id',        authorize('actor', 'secretario'), updateCausa);
 router.put ('/:id/status', authorize('secretario'),          updateStatus);
 router.delete('/:id',      authorize('secretario'),          deleteCausa);
+
+// Carátula
+router.post('/:id/caratula',         authorize('actor', 'secretario'), uploadCaratula, addCaratulaArchivo);
+router.get ('/:id/caratula/archivo', getArchivoCaratula);
 
 // Expedientes
 router.post  ('/:id/expedientes',                         authorize('actor', 'secretario'), addExpediente);
