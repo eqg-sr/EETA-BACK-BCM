@@ -181,12 +181,15 @@ export async function updateStatus(req: AuthRequest, res: Response): Promise<voi
   if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
 
   if (status === 'iniciado') {
-    const hasValidExpediente = causa.expedientes.some(
-      (exp: any) => exp.sujetos?.length > 0
-    );
-    if (!hasValidExpediente) {
+    if (causa.expedientes.length === 0) {
       res.status(400).json({
-        message: 'Para iniciar la causa debe existir al menos un expediente con al menos un sujeto asignado',
+        message: 'Para iniciar la causa debe existir al menos un expediente',
+      });
+      return;
+    }
+    if (causa.sujetos.length === 0) {
+      res.status(400).json({
+        message: 'Para iniciar la causa debe existir al menos un sujeto',
       });
       return;
     }
