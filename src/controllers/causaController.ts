@@ -211,15 +211,15 @@ export async function updateStatus(req: AuthRequest, res: Response): Promise<voi
   if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
 
   if (status === 'iniciado') {
-    if (causa.expedientes.length === 0) {
+    if (causa.sujetos.length === 0) {
       res.status(400).json({
-        message: 'Para iniciar la causa debe existir al menos un expediente',
+        message: 'Para iniciar el expediente debe tener al menos un sujeto.',
       });
       return;
     }
-    if (causa.sujetos.length === 0) {
+    if (!(causa.expedientes as any[]).some(e => e.movimientos.length > 0)) {
       res.status(400).json({
-        message: 'Para iniciar la causa debe existir al menos un sujeto',
+        message: 'Para iniciar el expediente debe tener al menos un movimiento.',
       });
       return;
     }
