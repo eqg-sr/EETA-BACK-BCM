@@ -32,7 +32,7 @@ export async function sendAuthorizationRequest(params: SendAuthorizationRequestP
     frontendUrl,
   } = params;
 
-  const authUrl = `${frontendUrl}/autorizar?token=${token}`;
+  const authUrl = `${frontendUrl.replace(/\/$/, '')}/autorizar?token=${token}`;
 
   console.log('[EMAIL] Intentando enviar mail a:', params.demandadoEmail);
 

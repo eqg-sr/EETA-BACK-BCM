@@ -150,6 +150,34 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
   if (existing) { res.status(409).json({ message: 'Causa with this id or identificador already exists' }); return; }
 
   const causa = await Causa.create(parsed.data);
+
+  const demandado = (causa.sujetos as any[]).find((s: any) => s.vinculo === 'DEMANDADO');
+  if (demandado?.domicilioElectronico) {
+    for (const sujeto of causa.sujetos as any[]) {
+      if (sujeto.vinculo === 'DEMANDADO') continue;
+
+      const token = crypto.randomBytes(32).toString('hex');
+      sujeto.aprobacionToken = token;
+      sujeto.aprobado = false;
+
+      try {
+        await sendAuthorizationRequest({
+          demandadoEmail: demandado.domicilioElectronico,
+          demandadoNombre: demandado.nombre,
+          sujetoNombre: sujeto.nombre,
+          sujetoVinculo: sujeto.vinculo,
+          causaCaratula: causa.caratula,
+          expedienteNro: causa.identificador,
+          token,
+          frontendUrl: process.env.FRONTEND_URL ?? '',
+        });
+      } catch (err) {
+        console.error('Error sending authorization request email:', err);
+      }
+    }
+    await causa.save();
+  }
+
   res.status(201).json(causa);
 }
 
