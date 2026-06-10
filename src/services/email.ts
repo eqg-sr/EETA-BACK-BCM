@@ -15,6 +15,8 @@ interface SendAuthorizationRequestParams {
   demandadoNombre: string;
   sujetoNombre: string;
   sujetoVinculo: string;
+  sujetoRepresentante?: string;
+  sujetoEmail?: string;
   causaCaratula: string;
   expedienteNro: string | number;
   token: string;
@@ -27,6 +29,8 @@ export async function sendAuthorizationRequest(params: SendAuthorizationRequestP
     demandadoNombre,
     sujetoNombre,
     sujetoVinculo,
+    sujetoRepresentante,
+    sujetoEmail,
     causaCaratula,
     token,
     frontendUrl,
@@ -43,6 +47,8 @@ export async function sendAuthorizationRequest(params: SendAuthorizationRequestP
     html: `
       <p>Estimado/a ${demandadoNombre},</p>
       <p>${sujetoNombre} (${sujetoVinculo}) solicita acceso al expediente ${causaCaratula}.</p>
+      ${sujetoRepresentante ? `<p>Representante: ${sujetoRepresentante}</p>` : ''}
+      ${sujetoEmail ? `<p>Email de contacto: ${sujetoEmail}</p>` : ''}
       <p><a href="${authUrl}">Autorizar acceso</a></p>
       <p>Si no reconocés esta solicitud, ignorá este correo.</p>
     `,
