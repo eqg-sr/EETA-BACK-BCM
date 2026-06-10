@@ -74,7 +74,6 @@ const causaRelacionadaSchema = z.object({
 
 const causaSchema = z.object({
   id:                z.string().min(1),
-  numeroInterno:     z.string().min(1),
   caratula:          z.string().min(1),
   tribunal:          z.string().min(1),
   arbitro:           z.string().min(1),
@@ -152,8 +151,26 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
   const seq = await getNextSequence('causa_identificador');
   const year = new Date().getFullYear();
   const identificador = `BCM-${year}-${String(seq).padStart(5, '0')}`;
+  const expedientes = parsed.data.expedientes.length > 0
+    ? parsed.data.expedientes
+    : [{
+        nroExpediente: identificador,
+        caratula: parsed.data.caratula,
+        fechaPresentacion: parsed.data.fechaPresentacion,
+        fechaInicio: parsed.data.fechaInicio,
+        ultimoMovimiento: parsed.data.ultimoMovimiento,
+        objetoJuicio: parsed.data.objetoJuicio,
+        sujetos: [],
+        movimientos: [],
+        comentarios: [],
+      }];
 
-  const causa = await Causa.create({ ...parsed.data, identificador });
+  const causa = await Causa.create({
+    ...parsed.data,
+    identificador,
+    numeroInterno: identificador,
+    expedientes,
+  });
 
   const demandado = (causa.sujetos as any[]).find((s: any) => s.vinculo === 'DEMANDADO');
   if (demandado?.domicilioElectronico) {
