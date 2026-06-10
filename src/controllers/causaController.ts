@@ -473,8 +473,8 @@ export async function addSujeto(req: Request, res: Response): Promise<void>{
           token,
           frontendUrl: process.env.FRONTEND_URL ?? '',
         });
-      } catch (err) {
-        console.error('Error sending authorization request email:', err);
+      } catch (emailError) {
+        console.error('[EMAIL ERROR] Fallo al enviar mail de autorización:', emailError);
       }
     }
   }

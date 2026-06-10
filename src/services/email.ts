@@ -34,6 +34,8 @@ export async function sendAuthorizationRequest(params: SendAuthorizationRequestP
 
   const authUrl = `${frontendUrl}/autorizar?token=${token}`;
 
+  console.log('[EMAIL] Intentando enviar mail a:', params.demandadoEmail);
+
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: demandadoEmail,
