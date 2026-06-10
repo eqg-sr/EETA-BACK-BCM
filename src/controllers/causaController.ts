@@ -3,11 +3,13 @@ import { z } from 'zod';
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import pdfParse from 'pdf-parse';
 import { Causa } from '../models/Causa';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { CAUSA_STATUSES } from '../types';
+import { sendAuthorizationRequest } from '../services/email';
 
 // ── Zod schemas ───────────────────────────────────────────────────────────────
 
@@ -398,12 +400,43 @@ export async function addSujeto(req: Request, res: Response): Promise<void>{
   const parsed = sujetoSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
 
-  const causa = await Causa.findOneAndUpdate(
-    { id: req.params.id, 'expedientes.nroExpediente': req.params.nroExpediente },
-    { $push: { 'expedientes.$.sujetos': parsed.data } },
-    { new: true }
-  );
-  if (!causa) { res.status(404).json({ message: 'Causa or Expediente not found' }); return; }
+  const causa = await Causa.findOne({ id: req.params.id });
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+
+  const expediente = (causa.expedientes as any[]).find((e: any) => e.nroExpediente === req.params.nroExpediente);
+  if (!expediente) { res.status(404).json({ message: 'Causa or Expediente not found' }); return; }
+
+  const sujetoData: Record<string, any> = { ...parsed.data };
+
+  if (parsed.data.vinculo === 'DEMANDADO') {
+    sujetoData.aprobado = true;
+  } else {
+    const token = crypto.randomBytes(32).toString('hex');
+    sujetoData.aprobacionToken = token;
+    sujetoData.aprobado = false;
+
+    const demandado = (expediente.sujetos as any[]).find((s: any) => s.vinculo === 'DEMANDADO');
+    if (demandado?.domicilioElectronico) {
+      try {
+        await sendAuthorizationRequest({
+          demandadoEmail: demandado.domicilioElectronico,
+          demandadoNombre: demandado.nombre,
+          sujetoNombre: parsed.data.nombre,
+          sujetoVinculo: parsed.data.vinculo,
+          causaCaratula: causa.caratula,
+          expedienteNro: req.params.nroExpediente,
+          token,
+          frontendUrl: process.env.FRONTEND_URL ?? '',
+        });
+      } catch (err) {
+        console.error('Error sending authorization request email:', err);
+      }
+    }
+  }
+
+  expediente.sujetos.push(sujetoData);
+  await causa.save();
+
   res.status(201).json(causa);
 }
 

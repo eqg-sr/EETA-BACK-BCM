@@ -3,6 +3,16 @@ import { SujetoVinculo, MovimientoTipo, CausaStatus } from '../types';
 
 // ── Sub-schemas ──────────────────────────────────────────────────────────────
 
+export interface ISujeto {
+  vinculo: SujetoVinculo;
+  nombre: string;
+  representante?: string;
+  domicilio?: string;
+  domicilioElectronico?: string;
+  aprobacionToken?: string;
+  aprobado: boolean;
+}
+
 const SujetoSchema = new Schema(
   {
     vinculo:              { type: String, enum: ['ACTOR', 'DEMANDADO', 'TERCERO'] as SujetoVinculo[], required: true },
@@ -10,6 +20,8 @@ const SujetoSchema = new Schema(
     representante:        { type: String },
     domicilio:            { type: String },
     domicilioElectronico: { type: String },
+    aprobacionToken:      { type: String },
+    aprobado:             { type: Boolean, default: function (this: ISujeto) { return this.vinculo === 'DEMANDADO'; } },
   },
   { _id: false }
 );

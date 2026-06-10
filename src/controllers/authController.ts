@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { z } from 'zod';
 import { User } from '../models/User';
+import { Causa } from '../models/Causa';
 
 const registerSchema = z.object({
   email:    z.string().email(),
@@ -65,4 +66,26 @@ export async function me(req: Request, res: Response): Promise<void> {
   const user = await User.findById(payload.userId);
   if (!user) { res.status(404).json({ message: 'User not found' }); return; }
   res.json(user);
+}
+
+export async function autorizarSujeto(req: Request, res: Response): Promise<void> {
+  const token = String(req.query.token ?? '');
+
+  const causa = await Causa.findOne({ 'expedientes.sujetos.aprobacionToken': token });
+  if (!causa) { res.status(400).json({ message: 'Token inválido o ya utilizado' }); return; }
+
+  let sujetoNombre = '';
+  for (const expediente of causa.expedientes as any[]) {
+    const sujeto = (expediente.sujetos as any[]).find((s: any) => s.aprobacionToken === token);
+    if (sujeto) {
+      sujeto.aprobado = true;
+      sujeto.aprobacionToken = undefined;
+      sujetoNombre = sujeto.nombre;
+      break;
+    }
+  }
+
+  await causa.save();
+
+  res.json({ message: 'Acceso autorizado correctamente', sujetoNombre, causaCaratula: causa.caratula });
 }
