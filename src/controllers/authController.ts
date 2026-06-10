@@ -71,17 +71,29 @@ export async function me(req: Request, res: Response): Promise<void> {
 export async function autorizarSujeto(req: Request, res: Response): Promise<void> {
   const token = String(req.query.token ?? '');
 
-  const causa = await Causa.findOne({ 'expedientes.sujetos.aprobacionToken': token });
+  const causa = await Causa.findOne({
+    $or: [
+      { 'sujetos.aprobacionToken': token },
+      { 'expedientes.sujetos.aprobacionToken': token },
+    ],
+  });
   if (!causa) { res.status(400).json({ message: 'Token inválido o ya utilizado' }); return; }
 
   let sujetoNombre = '';
-  for (const expediente of causa.expedientes as any[]) {
-    const sujeto = (expediente.sujetos as any[]).find((s: any) => s.aprobacionToken === token);
-    if (sujeto) {
-      sujeto.aprobado = true;
-      sujeto.aprobacionToken = undefined;
-      sujetoNombre = sujeto.nombre;
-      break;
+  const sujetoCausa = (causa.sujetos as any[]).find((s: any) => s.aprobacionToken === token);
+  if (sujetoCausa) {
+    sujetoCausa.aprobado = true;
+    sujetoCausa.aprobacionToken = undefined;
+    sujetoNombre = sujetoCausa.nombre;
+  } else {
+    for (const expediente of causa.expedientes as any[]) {
+      const sujeto = (expediente.sujetos as any[]).find((s: any) => s.aprobacionToken === token);
+      if (sujeto) {
+        sujeto.aprobado = true;
+        sujeto.aprobacionToken = undefined;
+        sujetoNombre = sujeto.nombre;
+        break;
+      }
     }
   }
 

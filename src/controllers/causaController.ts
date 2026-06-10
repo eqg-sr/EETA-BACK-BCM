@@ -398,6 +398,48 @@ export async function deleteComentario(req: Request, res: Response): Promise<voi
 }
 
 // ── Sujetos ───────────────────────────────────────────────────────
+/** POST /causas/:id/sujetos */
+export async function addSujetoCausa(req: Request, res: Response): Promise<void> {
+  const parsed = sujetoSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+
+  const causa = await Causa.findOne({ id: req.params.id });
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+
+  const sujetoData: Record<string, any> = { ...parsed.data };
+
+  if (parsed.data.vinculo === 'DEMANDADO') {
+    sujetoData.aprobado = true;
+  } else {
+    const token = crypto.randomBytes(32).toString('hex');
+    sujetoData.aprobacionToken = token;
+    sujetoData.aprobado = false;
+
+    const demandado = (causa.sujetos as any[]).find((s: any) => s.vinculo === 'DEMANDADO');
+    if (demandado?.domicilioElectronico) {
+      try {
+        await sendAuthorizationRequest({
+          demandadoEmail: demandado.domicilioElectronico,
+          demandadoNombre: demandado.nombre,
+          sujetoNombre: parsed.data.nombre,
+          sujetoVinculo: parsed.data.vinculo,
+          causaCaratula: causa.caratula,
+          expedienteNro: causa.identificador,
+          token,
+          frontendUrl: process.env.FRONTEND_URL ?? '',
+        });
+      } catch (err) {
+        console.error('Error sending authorization request email:', err);
+      }
+    }
+  }
+
+  (causa.sujetos as any[]).push(sujetoData);
+  await causa.save();
+
+  res.status(201).json(causa);
+}
+
 /** POST /causas/:id/expedientes/:nroExpediente/sujetos */
 export async function addSujeto(req: Request, res: Response): Promise<void>{
   const parsed = sujetoSchema.safeParse(req.body);

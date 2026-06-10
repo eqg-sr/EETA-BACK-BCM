@@ -7,7 +7,7 @@ import {
   addMovimiento, deleteMovimiento, getArchivoMovimiento,
   addComentario, deleteComentario,
   addCausaRelacionada, removeCausaRelacionada, getArchivoRelacionada,
-  addSujeto, deleteSujeto,
+  addSujeto, deleteSujeto, addSujetoCausa,
 } from '../controllers/causaController';
 
 const router = Router();
@@ -38,6 +38,7 @@ router.post  ('/:id/expedientes/:nroExpediente/comentarios',                   a
 router.delete('/:id/expedientes/:nroExpediente/comentarios/:comentarioId',     authorize('secretario'), deleteComentario);
 
 // Sujetos
+router.post  ('/:id/sujetos',                                     authorize('secretario'), addSujetoCausa);
 router.post  ('/:id/expedientes/:nroExpediente/sujetos',          authorize('secretario'), addSujeto);
 // TODO: controller uses :nombre as identifier — consider migrating to :sujetoId once front-end is aligned
 router.delete('/:id/expedientes/:nroExpediente/sujetos/:nombre',  authorize('secretario'), deleteSujeto);
