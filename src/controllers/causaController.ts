@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import mongoose from 'mongoose';
 import path from 'path';
+import fs from 'fs';
+import pdfParse from 'pdf-parse';
 import { Causa } from '../models/Causa';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
@@ -29,6 +31,12 @@ const movimientoSchema = z.object({
   acceso:      z.string().optional(),
   adjuntos:    z.boolean().optional(),
   relaciones:  z.boolean().optional(),
+});
+
+// Same as movimientoSchema but descripcion is optional, since it can be
+// auto-filled from the extracted text of an attached PDF.
+const movimientoConArchivoSchema = movimientoSchema.extend({
+  descripcion: z.string().max(2000).optional(),
 });
 
 const comentarioSchema = z.object({
@@ -277,12 +285,38 @@ export async function addMovimiento(req: AuthRequest, res: Response): Promise<vo
     }
   }
 
-  const parsed = movimientoSchema.safeParse(req.body);
+  const parsed = movimientoConArchivoSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+
+  const file = (req as any).file as Express.Multer.File | undefined;
+  const movimientoData: Record<string, any> = { ...parsed.data };
+  let descripcion = parsed.data.descripcion;
+
+  if (file) {
+    movimientoData.archivo = file.path.replace(/\\/g, '/');
+    movimientoData.nombreArchivo = file.originalname;
+
+    if (file.mimetype === 'application/pdf' && !descripcion) {
+      try {
+        const dataBuffer = fs.readFileSync(file.path);
+        const pdfData = await pdfParse(dataBuffer);
+        const extracted = pdfData.text.replace(/\s+/g, ' ').trim().slice(0, 1500);
+        if (extracted) descripcion = extracted;
+      } catch {
+        // PDF no procesable (escaneado, corrupto, etc.) — continuar sin extraer texto
+      }
+    }
+  }
+
+  if (!descripcion) {
+    res.status(400).json({ errors: { fieldErrors: { descripcion: ['Required'] }, formErrors: [] } });
+    return;
+  }
+  movimientoData.descripcion = descripcion;
 
   const causa = await Causa.findOneAndUpdate(
     { id: req.params.id, 'expedientes.nroExpediente': req.params.nroExpediente },
-    { $push: { 'expedientes.$.movimientos': parsed.data } },
+    { $push: { 'expedientes.$.movimientos': movimientoData } },
     { new: true }
   );
   if (!causa) { res.status(404).json({ message: 'Causa or Expediente not found' }); return; }
@@ -303,6 +337,21 @@ export async function addMovimiento(req: AuthRequest, res: Response): Promise<vo
 
   const updated = await Causa.findOne({ id: req.params.id });
   res.status(201).json(updated);
+}
+
+/** GET /causas/:id/expedientes/:nroExpediente/movimientos/:movId/archivo */
+export async function getArchivoMovimiento(req: Request, res: Response): Promise<void> {
+  const causa = await Causa.findOne({ id: req.params.id });
+  if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+
+  const exp = (causa.expedientes as any[]).find((e: any) => e.nroExpediente === req.params.nroExpediente);
+  if (!exp) { res.status(404).json({ message: 'Expediente not found' }); return; }
+
+  const mov = (exp.movimientos as any[]).find((m: any) => m.id === req.params.movId);
+  if (!mov?.archivo) { res.status(404).json({ message: 'Archivo no encontrado' }); return; }
+
+  const absPath = path.resolve(mov.archivo);
+  res.sendFile(absPath);
 }
 
 /** DELETE /causas/:id/expedientes/:nroExpediente/movimientos/:movId */

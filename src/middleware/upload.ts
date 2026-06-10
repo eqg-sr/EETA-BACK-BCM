@@ -35,3 +35,37 @@ export const uploadRelacionada = multer({
     }
   },
 }).single('archivo');
+
+const UPLOAD_DIR_MOVIMIENTOS = path.join(__dirname, '../../uploads/movimientos');
+
+if (!fs.existsSync(UPLOAD_DIR_MOVIMIENTOS)) {
+  fs.mkdirSync(UPLOAD_DIR_MOVIMIENTOS, { recursive: true });
+}
+
+const storageMovimientos = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR_MOVIMIENTOS),
+  filename: (_req, file, cb) => {
+    const safe = file.originalname.replace(/\s+/g, '_');
+    cb(null, `${Date.now()}-${safe}`);
+  },
+});
+
+const ALLOWED_MIME_MOVIMIENTOS = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+]);
+
+export const uploadMovimiento = multer({
+  storage: storageMovimientos,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME_MOVIMIENTOS.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no permitido'));
+    }
+  },
+}).single('archivo');

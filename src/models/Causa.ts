@@ -14,6 +14,22 @@ const SujetoSchema = new Schema(
   { _id: false }
 );
 
+export interface IMovimiento {
+  id: string;
+  fecha: Date;
+  tipo: MovimientoTipo;
+  titulo: string;
+  descripcion: string;
+  numero?: string;
+  tribunal?: string;
+  presentante?: string;
+  acceso?: string;
+  adjuntos?: boolean;
+  relaciones?: boolean;
+  archivo?: string;
+  nombreArchivo?: string;
+}
+
 const MovimientoSchema = new Schema(
   {
     id:          { type: String, required: true },
@@ -27,6 +43,8 @@ const MovimientoSchema = new Schema(
     acceso:      { type: String },
     adjuntos:    { type: Boolean },
     relaciones:  { type: Boolean },
+    archivo:       { type: String },
+    nombreArchivo: { type: String },
   },
   { _id: false }
 );

@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
-import { uploadRelacionada } from '../middleware/upload';
+import { uploadRelacionada, uploadMovimiento } from '../middleware/upload';
 import {
   listCausas, getCausa, createCausa, updateCausa, updateStatus, deleteCausa,
   addExpediente, updateExpediente, deleteExpediente,
-  addMovimiento, deleteMovimiento,
+  addMovimiento, deleteMovimiento, getArchivoMovimiento,
   addComentario, deleteComentario,
   addCausaRelacionada, removeCausaRelacionada, getArchivoRelacionada,
   addSujeto, deleteSujeto,
@@ -29,7 +29,8 @@ router.put   ('/:id/expedientes/:nroExpediente',          authorize('actor', 'se
 router.delete('/:id/expedientes/:nroExpediente',          authorize('secretario'),deleteExpediente);
 
 // Movimientos
-router.post  ('/:id/expedientes/:nroExpediente/movimientos',          addMovimiento);
+router.post  ('/:id/expedientes/:nroExpediente/movimientos',          uploadMovimiento, addMovimiento);
+router.get   ('/:id/expedientes/:nroExpediente/movimientos/:movId/archivo', getArchivoMovimiento);
 router.delete('/:id/expedientes/:nroExpediente/movimientos/:movId',   authorize('secretario'),            deleteMovimiento);
 
 // Comentarios
