@@ -6,6 +6,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import pdfParse from 'pdf-parse';
 import { Causa } from '../models/Causa';
+import { getNextSequence } from '../models/Counter';
 import { User } from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { CAUSA_STATUSES } from '../types';
@@ -73,7 +74,7 @@ const causaRelacionadaSchema = z.object({
 
 const causaSchema = z.object({
   id:                z.string().min(1),
-  identificador:     z.string().min(1),
+  identificador:     z.string().optional(),
   numeroInterno:     z.string().min(1),
   caratula:          z.string().min(1),
   tribunal:          z.string().min(1),
@@ -146,10 +147,14 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
   const parsed = causaSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
 
-  const existing = await Causa.findOne({ $or: [{ id: parsed.data.id }, { identificador: parsed.data.identificador }] });
-  if (existing) { res.status(409).json({ message: 'Causa with this id or identificador already exists' }); return; }
+  const existing = await Causa.findOne({ id: parsed.data.id });
+  if (existing) { res.status(409).json({ message: 'Causa with this id already exists' }); return; }
 
-  const causa = await Causa.create(parsed.data);
+  const seq = await getNextSequence('causa_identificador');
+  const year = new Date().getFullYear();
+  const identificador = `BCM-${year}-${String(seq).padStart(5, '0')}`;
+
+  const causa = await Causa.create({ ...parsed.data, identificador });
 
   const demandado = (causa.sujetos as any[]).find((s: any) => s.vinculo === 'DEMANDADO');
   if (demandado?.domicilioElectronico) {
