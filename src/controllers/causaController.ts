@@ -74,7 +74,6 @@ const causaRelacionadaSchema = z.object({
 
 const causaSchema = z.object({
   id:                z.string().min(1),
-  identificador:     z.string().optional(),
   numeroInterno:     z.string().min(1),
   caratula:          z.string().min(1),
   tribunal:          z.string().min(1),
