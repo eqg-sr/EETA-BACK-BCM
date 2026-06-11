@@ -46,7 +46,7 @@ const MovimientoSchema = new Schema(
   {
     id:          { type: String, required: true },
     fecha:       { type: Date, required: true },
-    tipo:        { type: String, enum: ['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER'] as MovimientoTipo[], required: true },
+    tipo:        { type: String, enum: ['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER', 'SEN'] as MovimientoTipo[], required: true },
     titulo:      { type: String, required: true },
     descripcion: { type: String, required: true, maxlength: 2000 },
     numero:      { type: String },
@@ -109,7 +109,7 @@ export interface ICausa extends Document {
   identificador: string;
   numeroInterno: string;
   caratula: string;
-  tribunal: string;
+  tribunal?: string;
   arbitro: string;
   fechaPresentacion: Date;
   fechaInicio: Date;
@@ -129,7 +129,7 @@ const CausaSchema = new Schema<ICausa>(
     identificador:    { type: String, required: true, unique: true },
     numeroInterno:    { type: String, required: true },
     caratula:         { type: String, required: true },
-    tribunal:         { type: String, required: true },
+    tribunal:         { type: String, default: 'Tribunal Arbitral BCM' },
     arbitro:          { type: String, required: true },
     fechaPresentacion:{ type: Date, required: true },
     fechaInicio:      { type: Date, required: true },

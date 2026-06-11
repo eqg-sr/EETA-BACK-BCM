@@ -75,7 +75,7 @@ const causaRelacionadaSchema = z.object({
 const causaSchema = z.object({
   id:                z.string().min(1),
   caratula:          z.string().min(1),
-  tribunal:          z.string().min(1),
+  tribunal:          z.string().optional(),
   arbitro:           z.string().min(1),
   fechaPresentacion: z.coerce.date(),
   fechaInicio:       z.coerce.date(),
@@ -167,6 +167,7 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
 
   const causa = await Causa.create({
     ...parsed.data,
+    tribunal: parsed.data.tribunal ?? 'Tribunal Arbitral BCM',
     identificador,
     numeroInterno: identificador,
     expedientes,
