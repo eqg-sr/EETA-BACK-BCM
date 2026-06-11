@@ -58,7 +58,7 @@ const causaSchema = z.object({
   identificador:     z.string().min(1),
   numeroInterno:     z.string().min(1),
   caratula:          z.string().min(1),
-  tribunal:          z.string().min(1),
+  tribunal:          z.string().optional(),
   arbitro:           z.string().min(1),
   fechaPresentacion: z.string().min(1),
   fechaInicio:       z.string().min(1),
@@ -119,7 +119,7 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
   const existing = await Causa.findOne({ $or: [{ id: parsed.data.id }, { identificador: parsed.data.identificador }] });
   if (existing) { res.status(409).json({ message: 'Causa with this id or identificador already exists' }); return; }
 
-  const causa = await Causa.create(parsed.data);
+  const causa = await Causa.create({ ...parsed.data, tribunal: parsed.data.tribunal ?? 'Tribunal Arbitral BCM' });
   res.status(201).json(causa);
 }
 
