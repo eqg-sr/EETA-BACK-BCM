@@ -48,7 +48,7 @@ export interface IMovimiento {
 const MovimientoSchema = new Schema(
   {
     id:          { type: String, required: true },
-    fecha:       { type: Date, required: true },
+    fecha:       { type: String, required: true },
     tipo:        { type: String, enum: ['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER', 'SEN'] as MovimientoTipo[], required: true },
     titulo:      { type: String, required: true },
     descripcion: { type: String, required: true, maxlength: 2000 },
@@ -114,11 +114,10 @@ export interface ICausa extends Document {
   numeroInterno: string;
   caratula: string;
   tribunal?: string;
-  nroExpedienteElectronico?: string;
-  arbitros: string[];
-  fechaPresentacion: Date;
-  fechaInicio: Date;
-  ultimoMovimiento: Date;
+  arbitro: string;
+  fechaPresentacion: string;
+  fechaInicio: string;
+  ultimoMovimiento: string;
   objetoJuicio: string;
   status: CausaStatus;
   archivo?: string;
@@ -135,11 +134,10 @@ const CausaSchema = new Schema<ICausa>(
     numeroInterno:    { type: String, required: true },
     caratula:         { type: String, required: true },
     tribunal:         { type: String, default: 'Tribunal Arbitral BCM' },
-    nroExpedienteElectronico: { type: String },
-    arbitros:         { type: [String], default: [] },
-    fechaPresentacion:{ type: Date, required: true },
-    fechaInicio:      { type: Date, required: true },
-    ultimoMovimiento: { type: Date, required: true },
+    arbitro:          { type: String, required: true },
+    fechaPresentacion:{ type: String, required: true },
+    fechaInicio:      { type: String, required: true },
+    ultimoMovimiento: { type: String, required: true },
     objetoJuicio:     { type: String, required: true },
     status:           { type: String, enum: ['pendiente', 'iniciado', 'en_proceso', 'cerrado'] as CausaStatus[], default: 'pendiente' },
     archivo:          { type: String },

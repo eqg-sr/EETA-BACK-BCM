@@ -78,11 +78,10 @@ const causaSchema = z.object({
   id:                z.string().min(1),
   caratula:          z.string().min(1),
   tribunal:          z.string().optional(),
-  nroExpedienteElectronico: z.string().optional(),
-  arbitros:          z.array(z.string()).max(3).optional(),
-  fechaPresentacion: z.coerce.date(),
-  fechaInicio:       z.coerce.date(),
-  ultimoMovimiento:  z.coerce.date(),
+  arbitro:           z.string().min(1),
+  fechaPresentacion: z.string().min(1),
+  fechaInicio:       z.string().min(1),
+  ultimoMovimiento:  z.string().min(1),
   objetoJuicio:      z.string().min(1),
   sujetos:           z.array(sujetoSchema).default([]),
   expedientes:       z.array(expedienteSchema).default([]),
@@ -212,6 +211,7 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
   }
   */
 
+  const causa = await Causa.create({ ...parsed.data, tribunal: parsed.data.tribunal ?? 'Tribunal Arbitral BCM' });
   res.status(201).json(causa);
 }
 
