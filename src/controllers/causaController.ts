@@ -120,9 +120,9 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
   if (arbitro)  filter.arbitros = new RegExp(String(arbitro), 'i');
   if (status && CAUSA_STATUSES.includes(status as any)) filter.status = status;
 
-  // Restrict non-staff roles to causas where they are explicitly assigned
+  // Only secretario (admin) can see all causas; everyone else is restricted to causas where they are explicitly assigned
   const role = req.user!.role;
-  if (['actor', 'demandado', 'perito'].includes(role)) {
+  if (role !== 'secretario') {
     filter['expedientes.asignados'] = new mongoose.Types.ObjectId(req.user!.userId);
   }
 
@@ -137,9 +137,19 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
 }
 
 /** GET /causas/:id */
-export async function getCausa(req: Request, res: Response): Promise<void> {
+export async function getCausa(req: AuthRequest, res: Response): Promise<void> {
   const causa = await Causa.findOne({ id: req.params.id });
   if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
+
+  // Only secretario (admin) can see any causa; everyone else must be assigned to one of its expedientes
+  const { role, userId } = req.user!;
+  if (role !== 'secretario') {
+    const isAssigned = (causa.expedientes as any[]).some(
+      (e: any) => e.asignados?.some((id: any) => id.toString() === userId)
+    );
+    if (!isAssigned) { res.status(404).json({ message: 'Causa not found' }); return; }
+  }
+
   res.json(causa);
 }
 
@@ -329,13 +339,7 @@ export async function deleteExpediente(req: Request, res: Response): Promise<voi
 export async function addMovimiento(req: AuthRequest, res: Response): Promise<void> {
   const { role, userId } = req.user!;
 
-  // Perito can never write
-  if (role === 'perito') {
-    res.status(403).json({ message: 'Forbidden: peritos cannot add movements' });
-    return;
-  }
-
-  // actor and demandado require explicit assignment to the expediente
+  // Sujetos asociados (actor, demandado, perito) require explicit assignment to the expediente
   if (!['secretario', 'arbitro'].includes(role)) {
     const causa = await Causa.findOne({ id: req.params.id });
     if (!causa) { res.status(404).json({ message: 'Causa not found' }); return; }
