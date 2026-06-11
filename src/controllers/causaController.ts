@@ -26,7 +26,7 @@ const sujetoSchema = z.object({
 const movimientoSchema = z.object({
   id:          z.string().min(1),
   fecha:       z.coerce.date(),
-  tipo:        z.enum(['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER']),
+  tipo:        z.enum(['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER', 'SEN']),
   titulo:      z.string().min(1),
   descripcion: z.string().min(1).max(2000),
   numero:      z.string().optional(),
@@ -125,7 +125,7 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
     filter['expedientes.asignados'] = new mongoose.Types.ObjectId(req.user!.userId);
   }
 
-  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitros fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status nombreArchivo';
+  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitros fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status nombreArchivo expedientes.nroExpediente expedientes.caratula';
 
   const [data, total] = await Promise.all([
     Causa.find(filter).select(projection).sort({ createdAt: -1 }).skip(skip).limit(limit),
