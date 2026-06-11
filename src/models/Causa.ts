@@ -11,6 +11,7 @@ export interface ISujeto {
   domicilioElectronico?: string;
   aprobacionToken?: string;
   aprobado: boolean;
+  calidad?: string;
 }
 
 const SujetoSchema = new Schema(
@@ -22,6 +23,7 @@ const SujetoSchema = new Schema(
     domicilioElectronico: { type: String },
     aprobacionToken:      { type: String },
     aprobado:             { type: Boolean, default: function (this: ISujeto) { return this.vinculo === 'DEMANDADO'; } },
+    calidad:              { type: String },
   },
   { _id: false }
 );
@@ -113,7 +115,7 @@ export interface ICausa extends Document {
   caratula: string;
   tribunal?: string;
   nroExpedienteElectronico?: string;
-  arbitro: string;
+  arbitros: string[];
   fechaPresentacion: Date;
   fechaInicio: Date;
   ultimoMovimiento: Date;
@@ -134,7 +136,7 @@ const CausaSchema = new Schema<ICausa>(
     caratula:         { type: String, required: true },
     tribunal:         { type: String, default: 'Tribunal Arbitral BCM' },
     nroExpedienteElectronico: { type: String },
-    arbitro:          { type: String, required: true },
+    arbitros:         { type: [String], default: [] },
     fechaPresentacion:{ type: Date, required: true },
     fechaInicio:      { type: Date, required: true },
     ultimoMovimiento: { type: Date, required: true },

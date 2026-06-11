@@ -20,6 +20,7 @@ const sujetoSchema = z.object({
   representante:        z.string().optional(),
   domicilio:            z.string().optional(),
   domicilioElectronico: z.string().optional(),
+  calidad:              z.string().optional(),
 });
 
 const movimientoSchema = z.object({
@@ -78,7 +79,7 @@ const causaSchema = z.object({
   caratula:          z.string().min(1),
   tribunal:          z.string().optional(),
   nroExpedienteElectronico: z.string().optional(),
-  arbitro:           z.string().min(1),
+  arbitros:          z.array(z.string()).max(3).optional(),
   fechaPresentacion: z.coerce.date(),
   fechaInicio:       z.coerce.date(),
   ultimoMovimiento:  z.coerce.date(),
@@ -116,7 +117,7 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
   const filter: Record<string, any> = {};
   if (search)   filter.$text = { $search: String(search) };
   if (tribunal) filter.tribunal = new RegExp(String(tribunal), 'i');
-  if (arbitro)  filter.arbitro  = new RegExp(String(arbitro), 'i');
+  if (arbitro)  filter.arbitros = new RegExp(String(arbitro), 'i');
   if (status && CAUSA_STATUSES.includes(status as any)) filter.status = status;
 
   // Restrict non-staff roles to causas where they are explicitly assigned
@@ -125,7 +126,7 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
     filter['expedientes.asignados'] = new mongoose.Types.ObjectId(req.user!.userId);
   }
 
-  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status nombreArchivo';
+  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitros fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status nombreArchivo';
 
   const [data, total] = await Promise.all([
     Causa.find(filter).select(projection).sort({ createdAt: -1 }).skip(skip).limit(limit),
