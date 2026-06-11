@@ -76,6 +76,7 @@ const causaSchema = z.object({
   id:                z.string().min(1),
   caratula:          z.string().min(1),
   tribunal:          z.string().optional(),
+  nroExpedienteElectronico: z.string().optional(),
   arbitro:           z.string().min(1),
   fechaPresentacion: z.coerce.date(),
   fechaInicio:       z.coerce.date(),
@@ -123,7 +124,7 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
     filter['expedientes.asignados'] = new mongoose.Types.ObjectId(req.user!.userId);
   }
 
-  const projection = 'id identificador numeroInterno caratula tribunal arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status';
+  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status';
 
   const [data, total] = await Promise.all([
     Causa.find(filter).select(projection).sort({ createdAt: -1 }).skip(skip).limit(limit),
