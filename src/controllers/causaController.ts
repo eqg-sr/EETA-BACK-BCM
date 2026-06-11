@@ -40,6 +40,7 @@ const movimientoSchema = z.object({
 // auto-filled from the extracted text of an attached PDF.
 const movimientoConArchivoSchema = movimientoSchema.extend({
   descripcion: z.string().max(2000).optional(),
+  sujetoNombre: z.string().optional(),
 });
 
 const comentarioSchema = z.object({
@@ -124,7 +125,7 @@ export async function listCausas(req: AuthRequest, res: Response): Promise<void>
     filter['expedientes.asignados'] = new mongoose.Types.ObjectId(req.user!.userId);
   }
 
-  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status';
+  const projection = 'id identificador numeroInterno caratula tribunal nroExpedienteElectronico arbitro fechaPresentacion fechaInicio ultimoMovimiento objetoJuicio status nombreArchivo';
 
   const [data, total] = await Promise.all([
     Causa.find(filter).select(projection).sort({ createdAt: -1 }).skip(skip).limit(limit),
@@ -174,6 +175,12 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
     expedientes,
   });
 
+  // Flujo de autorización por mail desactivado: todos los sujetos quedan aprobados automáticamente
+  for (const sujeto of causa.sujetos as any[]) {
+    sujeto.aprobado = true;
+  }
+  await causa.save();
+  /*
   const demandado = (causa.sujetos as any[]).find((s: any) => s.vinculo === 'DEMANDADO');
   if (demandado?.domicilioElectronico) {
     for (const sujeto of causa.sujetos as any[]) {
@@ -202,6 +209,7 @@ export async function createCausa(req: Request, res: Response): Promise<void> {
     }
     await causa.save();
   }
+  */
 
   res.status(201).json(causa);
 }
@@ -487,6 +495,9 @@ export async function addSujetoCausa(req: Request, res: Response): Promise<void>
 
   const sujetoData: Record<string, any> = { ...parsed.data };
 
+  // Flujo de autorización por mail desactivado: el sujeto queda aprobado automáticamente
+  sujetoData.aprobado = true;
+  /*
   if (parsed.data.vinculo === 'DEMANDADO') {
     sujetoData.aprobado = true;
   } else {
@@ -514,6 +525,7 @@ export async function addSujetoCausa(req: Request, res: Response): Promise<void>
       }
     }
   }
+  */
 
   (causa.sujetos as any[]).push(sujetoData);
   await causa.save();
@@ -534,6 +546,9 @@ export async function addSujeto(req: Request, res: Response): Promise<void>{
 
   const sujetoData: Record<string, any> = { ...parsed.data };
 
+  // Flujo de autorización por mail desactivado: el sujeto queda aprobado automáticamente
+  sujetoData.aprobado = true;
+  /*
   if (parsed.data.vinculo === 'DEMANDADO') {
     sujetoData.aprobado = true;
   } else {
@@ -561,6 +576,7 @@ export async function addSujeto(req: Request, res: Response): Promise<void>{
       }
     }
   }
+  */
 
   expediente.sujetos.push(sujetoData);
   await causa.save();

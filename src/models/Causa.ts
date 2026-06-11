@@ -40,6 +40,7 @@ export interface IMovimiento {
   relaciones?: boolean;
   archivo?: string;
   nombreArchivo?: string;
+  sujetoNombre?: string;
 }
 
 const MovimientoSchema = new Schema(
@@ -57,6 +58,7 @@ const MovimientoSchema = new Schema(
     relaciones:  { type: Boolean },
     archivo:       { type: String },
     nombreArchivo: { type: String },
+    sujetoNombre:  { type: String },
   },
   { _id: false }
 );
