@@ -114,7 +114,8 @@ export interface ICausa extends Document {
   numeroInterno: string;
   caratula: string;
   tribunal?: string;
-  arbitro: string;
+  nroExpedienteElectronico?: string;
+  arbitros: string[];
   fechaPresentacion: string;
   fechaInicio: string;
   ultimoMovimiento: string;
@@ -134,7 +135,8 @@ const CausaSchema = new Schema<ICausa>(
     numeroInterno:    { type: String, required: true },
     caratula:         { type: String, required: true },
     tribunal:         { type: String, default: 'Tribunal Arbitral BCM' },
-    arbitro:          { type: String, required: true },
+    nroExpedienteElectronico:{ type: String },
+    arbitros:         { type: [String], default: [] },
     fechaPresentacion:{ type: String, required: true },
     fechaInicio:      { type: String, required: true },
     ultimoMovimiento: { type: String, required: true },

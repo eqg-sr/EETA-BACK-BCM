@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
 import { uploadRelacionada, uploadMovimiento, uploadCaratula } from '../middleware/upload';
+import { asyncHandler } from '../utils/asyncHandler';
 import {
   listCausas, getCausa, createCausa, updateCausa, updateStatus, deleteCausa,
   addExpediente, updateExpediente, deleteExpediente,
@@ -17,41 +18,41 @@ const router = Router();
 router.use(authenticate);
 
 // Causas
-router.get ('/',           listCausas);
-router.get ('/:id',        getCausa);
-router.post('/',           authorize('actor', 'secretario'), createCausa);
-router.put ('/:id',        authorize('actor', 'secretario'), updateCausa);
-router.put ('/:id/status', authorize('secretario'),          updateStatus);
-router.delete('/:id',      authorize('secretario'),          deleteCausa);
+router.get ('/',           asyncHandler(listCausas));
+router.get ('/:id',        asyncHandler(getCausa));
+router.post('/',           authorize('actor', 'secretario'), asyncHandler(createCausa));
+router.put ('/:id',        authorize('actor', 'secretario'), asyncHandler(updateCausa));
+router.put ('/:id/status', authorize('secretario'),          asyncHandler(updateStatus));
+router.delete('/:id',      authorize('secretario'),          asyncHandler(deleteCausa));
 
 // Carátula
-router.post('/:id/caratula',         authorize('actor', 'secretario'), uploadCaratula, addCaratulaArchivo);
-router.get ('/:id/caratula/archivo', getArchivoCaratula);
+router.post('/:id/caratula',         authorize('actor', 'secretario'), uploadCaratula, asyncHandler(addCaratulaArchivo));
+router.get ('/:id/caratula/archivo', asyncHandler(getArchivoCaratula));
 
 // Expedientes
-router.post  ('/:id/expedientes',                         authorize('actor', 'secretario'), addExpediente);
-router.put   ('/:id/expedientes/:nroExpediente',          authorize('actor', 'secretario'), updateExpediente);
-router.delete('/:id/expedientes/:nroExpediente',          authorize('secretario'),deleteExpediente);
+router.post  ('/:id/expedientes',                         authorize('actor', 'secretario'), asyncHandler(addExpediente));
+router.put   ('/:id/expedientes/:nroExpediente',          authorize('actor', 'secretario'), asyncHandler(updateExpediente));
+router.delete('/:id/expedientes/:nroExpediente',          authorize('secretario'),asyncHandler(deleteExpediente));
 
 // Movimientos
-router.post  ('/:id/expedientes/:nroExpediente/movimientos',          uploadMovimiento, addMovimiento);
-router.get   ('/:id/expedientes/:nroExpediente/movimientos/:movId/archivo', getArchivoMovimiento);
-router.delete('/:id/expedientes/:nroExpediente/movimientos/:movId',   authorize('secretario'),            deleteMovimiento);
+router.post  ('/:id/expedientes/:nroExpediente/movimientos',          uploadMovimiento, asyncHandler(addMovimiento));
+router.get   ('/:id/expedientes/:nroExpediente/movimientos/:movId/archivo', asyncHandler(getArchivoMovimiento));
+router.delete('/:id/expedientes/:nroExpediente/movimientos/:movId',   authorize('secretario'),            asyncHandler(deleteMovimiento));
 
 // Comentarios
-router.post  ('/:id/expedientes/:nroExpediente/comentarios',                   authorize('secretario'), addComentario);
-router.delete('/:id/expedientes/:nroExpediente/comentarios/:comentarioId',     authorize('secretario'), deleteComentario);
+router.post  ('/:id/expedientes/:nroExpediente/comentarios',                   authorize('secretario'), asyncHandler(addComentario));
+router.delete('/:id/expedientes/:nroExpediente/comentarios/:comentarioId',     authorize('secretario'), asyncHandler(deleteComentario));
 
 // Sujetos
-router.post  ('/:id/sujetos',                                     authorize('secretario'), addSujetoCausa);
-router.post  ('/:id/expedientes/:nroExpediente/sujetos',          authorize('secretario'), addSujeto);
+router.post  ('/:id/sujetos',                                     authorize('secretario'), asyncHandler(addSujetoCausa));
+router.post  ('/:id/expedientes/:nroExpediente/sujetos',          authorize('secretario'), asyncHandler(addSujeto));
 // TODO: controller uses :nombre as identifier — consider migrating to :sujetoId once front-end is aligned
-router.delete('/:id/expedientes/:nroExpediente/sujetos/:nombre',  authorize('secretario'), deleteSujeto);
+router.delete('/:id/expedientes/:nroExpediente/sujetos/:nombre',  authorize('secretario'), asyncHandler(deleteSujeto));
 
 // Causas Relacionadas
-router.post  ('/:id/relacionadas',                              authorize('secretario'), uploadRelacionada, addCausaRelacionada);
-router.get   ('/:id/relacionadas/:relacionadaId/archivo',       getArchivoRelacionada);
-router.delete('/:id/relacionadas/:identificador',               authorize('secretario'), removeCausaRelacionada);
+router.post  ('/:id/relacionadas',                              authorize('secretario'), uploadRelacionada, asyncHandler(addCausaRelacionada));
+router.get   ('/:id/relacionadas/:relacionadaId/archivo',       asyncHandler(getArchivoRelacionada));
+router.delete('/:id/relacionadas/:identificador',               authorize('secretario'), asyncHandler(removeCausaRelacionada));
 
 // Still adding and testing endpoints btw
 
