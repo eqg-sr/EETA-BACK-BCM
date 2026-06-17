@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate, authorize } from '../middleware/auth';
-import { uploadRelacionada, uploadMovimiento, uploadCaratula } from '../middleware/upload';
+import { uploadRelacionada, uploadMovimiento, uploadCaratula, uploadMemory } from '../middleware/upload';
 import { asyncHandler } from '../utils/asyncHandler';
 import {
   listCausas, getCausa, createCausa, updateCausa, updateStatus, deleteCausa,
@@ -10,12 +10,16 @@ import {
   addCausaRelacionada, removeCausaRelacionada, getArchivoRelacionada,
   addSujeto, deleteSujeto, addSujetoCausa,
   addCaratulaArchivo, getArchivoCaratula,
+  parseDemanda,
 } from '../controllers/causaController';
 
 const router = Router();
 
 // All causa routes require authentication
 router.use(authenticate);
+
+// Parse demanda — must be before /:id to avoid route conflict
+router.post('/parse-demanda', authorize('actor', 'secretario'), uploadMemory.single('archivo'), asyncHandler(parseDemanda));
 
 // Causas
 router.get ('/',           asyncHandler(listCausas));
