@@ -5,7 +5,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import {
   listCausas, getCausa, createCausa, updateCausa, updateStatus, deleteCausa,
   addExpediente, updateExpediente, deleteExpediente,
-  addMovimiento, deleteMovimiento, getArchivoMovimiento,
+  addMovimiento, updateMovimiento, deleteMovimiento, getArchivoMovimiento,
   addComentario, deleteComentario,
   addCausaRelacionada, removeCausaRelacionada, getArchivoRelacionada,
   addSujeto, deleteSujeto, addSujetoCausa,
@@ -39,9 +39,10 @@ router.put   ('/:id/expedientes/:nroExpediente',          authorize('actor', 'se
 router.delete('/:id/expedientes/:nroExpediente',          authorize('secretario'),asyncHandler(deleteExpediente));
 
 // Movimientos
-router.post  ('/:id/expedientes/:nroExpediente/movimientos',          uploadMovimiento, asyncHandler(addMovimiento));
-router.get   ('/:id/expedientes/:nroExpediente/movimientos/:movId/archivo', asyncHandler(getArchivoMovimiento));
-router.delete('/:id/expedientes/:nroExpediente/movimientos/:movId',   authorize('secretario'),            asyncHandler(deleteMovimiento));
+router.post  ('/:id/expedientes/:nroExpediente/movimientos',                        uploadMovimiento,         asyncHandler(addMovimiento));
+router.put   ('/:id/expedientes/:nroExpediente/movimientos/:movId',                authorize('secretario'),  asyncHandler(updateMovimiento));
+router.get   ('/:id/expedientes/:nroExpediente/movimientos/:movId/archivo',                                  asyncHandler(getArchivoMovimiento));
+router.delete('/:id/expedientes/:nroExpediente/movimientos/:movId',                authorize('secretario'),  asyncHandler(deleteMovimiento));
 
 // Comentarios
 router.post  ('/:id/expedientes/:nroExpediente/comentarios',                   authorize('secretario'), asyncHandler(addComentario));

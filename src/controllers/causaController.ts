@@ -423,6 +423,38 @@ export async function getArchivoMovimiento(req: Request, res: Response): Promise
   res.sendFile(absPath);
 }
 
+/** PUT /causas/:id/expedientes/:nroExpediente/movimientos/:movId */
+export async function updateMovimiento(req: Request, res: Response): Promise<void> {
+  const schema = z.object({
+    tipo:        z.enum(MOVIMIENTO_TIPOS).optional(),
+    titulo:      z.string().min(1).optional(),
+    descripcion: z.string().optional(),
+    sujetoNombre:z.string().optional(),
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ errors: parsed.error.flatten() }); return; }
+
+  const updates: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(parsed.data)) {
+    if (v !== undefined) updates[`expedientes.$[exp].movimientos.$[mov].${k}`] = v;
+  }
+  if (Object.keys(updates).length === 0) { res.status(400).json({ message: 'Nada que actualizar' }); return; }
+
+  const causa = await Causa.findOneAndUpdate(
+    { id: req.params.id },
+    { $set: updates },
+    {
+      new: true,
+      arrayFilters: [
+        { 'exp.nroExpediente': req.params.nroExpediente },
+        { 'mov.id': req.params.movId },
+      ],
+    }
+  );
+  if (!causa) { res.status(404).json({ message: 'Causa, expediente o movimiento no encontrado' }); return; }
+  res.json(causa);
+}
+
 /** DELETE /causas/:id/expedientes/:nroExpediente/movimientos/:movId */
 export async function deleteMovimiento(req: Request, res: Response): Promise<void> {
   const causa = await Causa.findOneAndUpdate(
