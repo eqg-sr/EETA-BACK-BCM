@@ -1,5 +1,5 @@
 // types/index.ts
-export const USER_ROLES = ['arbitro', 'demandado', 'actor', 'secretario', 'perito'] as const;
+export const USER_ROLES = ['arbitro', 'demandado', 'actor', 'secretario', 'perito', 'otros'] as const;
 export const SUJETO_VINCULOS = ['ACTOR', 'DEMANDADO', 'TERCERO'] as const;
 export const MOVIMIENTO_TIPOS = [
   'DEMANDA_ACTUACION',

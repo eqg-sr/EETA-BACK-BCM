@@ -19,7 +19,7 @@ const UserSchema = new Schema<IUser>(
     password: { type: String, required: true },
     role: {
       type: String,
-      enum: ['arbitro', 'demandado', 'actor', 'secretario', 'perito'] as UserRole[],
+      enum: ['arbitro', 'demandado', 'actor', 'secretario', 'perito', 'otros'] as UserRole[],
       required: true,
     },
     activo:   { type: Boolean, default: true },
