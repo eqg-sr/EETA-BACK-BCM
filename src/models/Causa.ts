@@ -9,6 +9,7 @@ export interface ISujeto {
   representante?: string;
   domicilio?: string;
   domicilioElectronico?: string;
+  cuit?: string;
   aprobacionToken?: string;
   aprobado: boolean;
   calidad?: string;
@@ -21,6 +22,7 @@ const SujetoSchema = new Schema(
     representante:        { type: String },
     domicilio:            { type: String },
     domicilioElectronico: { type: String },
+    cuit:                 { type: String },
     aprobacionToken:      { type: String },
     aprobado:             { type: Boolean, default: function (this: ISujeto) { return this.vinculo === 'DEMANDADO'; } },
     calidad:              { type: String },
@@ -49,7 +51,7 @@ const MovimientoSchema = new Schema(
   {
     id:          { type: String, required: true },
     fecha:       { type: String, required: true },
-    tipo:        { type: String, enum: ['ACT', 'ESC', 'CED', 'RES', 'NOT', 'AUD', 'PER', 'SEN'] as MovimientoTipo[], required: true },
+    tipo:        { type: String, enum: ['DEMANDA_ACTUACION','DECRETO','CONTESTACION','CONTESTACION_TRASLADO','VISTA_CAUSA','AUDIENCIA_INICIAL','AUTOS_LAUDAR','LAUDO','ESCRITO','CEDULA','NOTIFICACION','PERICIA'] as MovimientoTipo[], required: true },
     titulo:      { type: String, required: true },
     descripcion: { type: String, required: true, maxlength: 2000 },
     numero:      { type: String },
@@ -114,7 +116,9 @@ export interface ICausa extends Document {
   numeroInterno: string;
   caratula: string;
   tribunal?: string;
-  arbitro: string;
+  nroExpedienteElectronico?: string;
+  arbitros: string[];
+  arbitrosSuplentes: string[];
   fechaPresentacion: string;
   fechaInicio: string;
   ultimoMovimiento: string;
@@ -134,7 +138,9 @@ const CausaSchema = new Schema<ICausa>(
     numeroInterno:    { type: String, required: true },
     caratula:         { type: String, required: true },
     tribunal:         { type: String, default: 'Tribunal Arbitral BCM' },
-    arbitro:          { type: String, required: true },
+    nroExpedienteElectronico:{ type: String },
+    arbitros:         { type: [String], default: [] },
+    arbitrosSuplentes:{ type: [String], default: [] },
     fechaPresentacion:{ type: String, required: true },
     fechaInicio:      { type: String, required: true },
     ultimoMovimiento: { type: String, required: true },
